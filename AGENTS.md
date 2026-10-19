@@ -35,7 +35,7 @@ Tiny tweaks (copy, spacing, a label) go straight to `main`, with no PR.
 2. **Printing secrets.** Never echo, log or commit one. Generate a secret and pipe it straight in: `openssl rand -base64 32 | bunx convex env set BETTER_AUTH_SECRET`.
 3. **Breaking open tabs.** Users keep the old frontend open after a deploy, so a public function's arguments and return value change only additively. Removals and renames go in a later PR.
 4. **Narrowing data in one step.** It takes three PRs: widen the schema, migrate (`@convex-dev/migrations`), then narrow, and only after the migration has completed. Igor takes a backup first.
-5. **Running `convex dev` in a worktree.** There is one dev deployment. Builders run `bunx convex codegen` and test with `convex-test`; only `/build`'s integration check pushes to dev.
+5. **Running `convex dev` in a worktree.** There is one dev deployment. Builders never run it; they run `bunx convex codegen` and test with `convex-test`. The one exception is `/build`'s integration check, which runs `bun run dev` in the batch's worktree: the only `convex dev` during a build.
 
 ## Hit every surface
 
@@ -52,18 +52,18 @@ The most common defect is a change that works on the path you tested and is miss
 ## Dev servers
 
 - `bun install`. New worktrees get `.env.local` and dependencies from `t3.json` / `.worktreeinclude`.
-- `bun run dev` runs Vite and `convex dev` together on port 3000. Only Igor or the integration check runs it.
+- `bun run dev` runs Vite and `convex dev` together on port 3000. Only Igor or the integration check runs it. It deletes and regenerates `src/routeTree.gen.ts` first, to work around a nitro beta restart bug (see `docs/internals/convex.md`).
 - Stop what you started, by the PID you captured. Never kill by name or pattern.
 
 ## Test data
 
 - `bunx convex run seed` creates the seeded accounts (see `convex/seed.ts`). It refuses wherever `TEST_OTP_CODE` is unset, which includes production.
-- Sign in as a seeded account with the code in `TEST_OTP_CODE`. It works only in dev and previews, and only for seeded addresses.
+- Sign in as a seeded account with the code in `TEST_OTP_CODE`. It works only in dev and previews, and only for seeded addresses. Use it without printing it: `TEST_OTP_CODE="$(bunx convex env get TEST_OTP_CODE)" bunx playwright …`.
 - Each branch's previews share one backend, seeded when it's created.
 
 ## Verifying
 
-- **Smallest proof:** run the tests that cover what you changed, plus `bunx oxlint --type-aware <files>` and `bunx tsc --noEmit`. CI runs the full suite (`bun run check`'s steps, then the preview e2e).
+- **Smallest proof:** run the tests that cover what you changed, plus `bunx oxfmt <files>`, `bunx oxlint --type-aware <files>` and `bunx tsc --noEmit`. CI runs the full suite (`bun run check`'s steps, then the preview e2e).
 - **Backend changes** ship with focused `convex-test` tests at the function boundary: who may call it, whose data it touches, and the error codes. Copy `convex/account.test.ts`.
 - **Test meaningful behaviour.** No static-render tests, no tests that mirror the implementation, no snapshots.
 - **End-to-end:** one Playwright test (sign-in). Add one only for a flow whose breaking would really hurt.
@@ -78,7 +78,7 @@ The most common defect is a change that works on the path you tested and is miss
   - the one-way or two-way door line;
   - the Linear links;
   - the models that built and reviewed it.
-- **Merging deploys production.** CI green means verify, the Vercel build and the preview e2e, all for the head SHA.
+- **Merging deploys production.** CI green means verify, the Vercel build and the preview e2e, all for the head SHA. Confirm e2e itself passed, since it appears a few seconds after Vercel's success: `gh pr checks <n> --json name,bucket --jq '.[] | select(.name == "e2e") | .bucket'` prints `pass`.
 
 ## Documentation
 
@@ -138,11 +138,11 @@ Every dispatch pins its model and effort. Never Haiku. At most 6 Opus agents at 
 | Discovery and spec session | Opus 5.5 | xhigh |
 | Spec challenge: new app or high-stakes / other specs / small features | Astra + Opus 5.5 / Astra / none | xhigh |
 | Build coordinator (`/build`) | Opus 5.5 | high |
-| Backend builder | Opus 5.5 | medium; high for really complex work |
+| Backend builder (and pieces with both backend and UI) | Opus 5.5 | medium; high for really complex work |
 | Design session (`/design`), UI foundation | Opus 5.5 | high |
 | Screens and views | Sonnet 5.5 | medium |
 | Ordinary review | Sol | high |
-| Important review: public contracts, substantial behaviour, integrations | Sol | xhigh |
+| Important review: changed or removed arguments or returns of existing functions, APIs other apps consume, substantial behaviour, integrations | Sol | xhigh |
 | High-stakes review: money, authorization and tenancy, migrations and deletion, concurrency, billing webhooks | Sol + Opus 5.5 | xhigh |
 | UI review in the browser, once per batch | Opus 5.5 | high |
 | Research | Sol | medium |
