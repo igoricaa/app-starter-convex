@@ -6,6 +6,7 @@ import { Resend } from "@convex-dev/resend";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins/email-otp";
+import * as z from "zod";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { env, type ActionCtx } from "./_generated/server";
@@ -32,18 +33,9 @@ const otpLimits = new RateLimiter(components.rateLimiter, {
   attemptsPerAddress: { kind: "token bucket", rate: 10, period: 10 * MINUTE },
 });
 
-// Every public endpoint that issues an email code, and every one that checks one.
-const issuesCode = [
-  "/email-otp/send-verification-otp",
-  "/email-otp/request-password-reset",
-  "/forget-password/email-otp",
-];
-const checksCode = [
-  "/sign-in/email-otp",
-  "/email-otp/check-verification-otp",
-  "/email-otp/verify-email",
-  "/email-otp/reset-password",
-];
+// The sign-in flow's only two email-code endpoints. Every other one is disabled below.
+const sendCode = "/email-otp/send-verification-otp";
+const signIn = "/sign-in/email-otp";
 
 const authFunctions: AuthFunctions = internal.auth;
 
@@ -55,8 +47,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
         await ctx.db.insert("users", {
           authId: authUser._id,
           email: authUser.email,
-          // The account slice's limit; sign-up itself accepts any length.
-          displayName: authUser.name.trim().slice(0, 50),
+          displayName: authUser.name,
         });
       },
     },
@@ -77,19 +68,47 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
     // Behind the app's proxy every request reaches Convex from the server's IP, so per-IP limits
     // would throttle all users together. The hook below limits codes per address instead.
     rateLimit: { enabled: false },
+    // /update-user would take any name or image; the app's account.updateDisplayName validates
+    // names. The rest are the email-code endpoints the sign-in flow doesn't use.
+    disabledPaths: [
+      "/update-user",
+      "/email-otp/check-verification-otp",
+      "/email-otp/verify-email",
+      "/email-otp/request-password-reset",
+      "/forget-password/email-otp",
+      "/email-otp/reset-password",
+      "/email-otp/request-email-change",
+      "/email-otp/change-email",
+    ],
+    databaseHooks: {
+      user: {
+        create: {
+          // Sign-up accepts any name and image; keep the account slice's limit and no image.
+          before: async (user) => ({
+            data: { ...user, name: user.name.trim().slice(0, 50), image: null },
+          }),
+        },
+      },
+    },
+    // Reads never extend a session: the server's SSR token read drops Better Auth's Set-Cookie.
+    // The browser's auth client sees `needsRefresh` and extends it through the app's proxy.
+    session: { deferSessionRefresh: true },
     hooks: {
       // Runs before the endpoint, so a refused request never stores or replaces a code.
       before: createAuthMiddleware(async ({ path, body, context }) => {
-        const checking = checksCode.includes(path);
-        if ((!checking && !issuesCode.includes(path)) || typeof body?.email !== "string") return;
-        const key = body.email.trim().toLowerCase();
+        // As the endpoints read it. No code exists for an invalid address, so it needs no limit.
+        const email = typeof body?.email === "string" ? body.email.toLowerCase() : "";
+        if ((path !== sendCode && path !== signIn) || !z.email().safeParse(email).success) return;
         const limitCtx = requireRunMutationCtx(ctx);
-        const ok = checking
-          ? (await otpLimits.limit(limitCtx, "attemptsPerAddress", { key })).ok
-          : usesFixedCode(key) ||
-            ((await otpLimits.limit(limitCtx, "codesPerAddress", { key })).ok &&
-              (!!(await context.internalAdapter.findUserByEmail(key)) ||
-                (await otpLimits.limit(limitCtx, "codesForNewAddresses")).ok));
+        const ok =
+          path === signIn
+            ? (await otpLimits.limit(limitCtx, "attemptsPerAddress", { key: email })).ok
+            : usesFixedCode(email) ||
+              ((await otpLimits.limit(limitCtx, "codesPerAddress", { key: email })).ok &&
+                // Only a sign-in code is sent to an address without an account.
+                (body.type !== "sign-in" ||
+                  !!(await context.internalAdapter.findUserByEmail(email)) ||
+                  (await otpLimits.limit(limitCtx, "codesForNewAddresses")).ok));
         if (!ok)
           throw new APIError("TOO_MANY_REQUESTS", {
             message: "Too many tries. Wait a few minutes.",

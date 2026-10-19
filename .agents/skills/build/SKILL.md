@@ -136,8 +136,13 @@ You commit, in the worktree, with the Linear key in the message (`feat(account):
   - narrowing takes three PRs (widen, migrate, narrow), and you narrow only after the migration has completed;
   - a public function's arguments and return value change only additively.
 - **CI failing for infrastructure reasons** (e.g. billing): merge only on the owner's agreement, after the full suite passes locally.
-- **How:** squash merge, `gh pr merge <n> --squash --delete-branch`. Then `git worktree remove` each piece's worktree.
-- **After merge:** one quick check that production is up and the change works (open the production URL, sign in if needed).
+- **How:** `gh pr merge <n> --squash --delete-branch --subject "<PR title> (#<n>)" --body "Co-Authored-By: <the builder model's attribution line>"`. It also removes the checked-out worktree; then run `git worktree prune`.
+- **After merge:** one quick production check:
+  - the deployment for the merge SHA is Ready;
+  - `/sign-in` and `/api/auth/ok` return 200;
+  - the push CI run on `main` passed.
+
+  The feature itself was proven on the preview.
 
 ## 8. Stop
 
