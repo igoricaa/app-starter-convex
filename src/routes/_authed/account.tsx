@@ -43,9 +43,11 @@ function AccountPage() {
         <FieldError>{nameError}</FieldError>
       </Field>
       {error && !nameError && <p role="alert">{error.message}</p>}
-      <Button type="submit" disabled={!hydrated || update.isPending} className="self-start">
-        Save
-      </Button>
+      <div>
+        <Button type="submit" disabled={!hydrated || update.isPending}>
+          Save
+        </Button>
+      </div>
     </form>
   );
 }
