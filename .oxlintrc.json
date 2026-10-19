@@ -5,7 +5,7 @@
   "categories": {
     "correctness": "error"
   },
-  "ignorePatterns": ["convex/_generated/**", "src/routeTree.gen.ts"],
+  "ignorePatterns": ["convex/_generated/**", "src/routeTree.gen.ts", ".agents/**", ".claude/**"],
   "rules": {
     "no-restricted-imports": [
       "error",
