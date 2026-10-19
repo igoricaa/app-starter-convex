@@ -1,0 +1,11 @@
+{
+  "$schema": "https://t3.codes/schema/t3.json",
+  "scripts": [
+    {
+      "name": "Setup Worktree",
+      "command": "cp \"$T3CODE_PROJECT_ROOT/.env.local\" .env.local && bun install",
+      "icon": "configure",
+      "runOnWorktreeCreate": true
+    }
+  ]
+}

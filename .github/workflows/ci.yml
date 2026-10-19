@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  # An alarm only: Vercel has already deployed main by the time this runs.
+  push:
+    branches: [main]
+  # Vercel reports each preview deployment here.
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event_name != 'deployment_status' && !github.event.pull_request.draft
+    concurrency:
+      group: verify-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bunx oxfmt --check
+      - run: bunx oxlint --type-aware
+      - run: bunx knip
+      - run: bunx tsc --noEmit
+      - run: bunx vitest run
+
+  # A preview of a superseded commit proves nothing about the PR: test only an open PR's head.
+  preview-is-pr-head:
+    if: >-
+      github.event_name == 'deployment_status' &&
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Preview'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      current: ${{ steps.check.outputs.current }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          heads=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '.[] | select(.state == "open") | .head.sha')
+          if grep -qx "$SHA" <<<"$heads"; then echo "current=true" >> "$GITHUB_OUTPUT"; fi
+
+  e2e:
+    needs: preview-is-pr-head
+    if: needs.preview-is-pr-head.outputs.current == 'true'
+    concurrency:
+      group: e2e-${{ github.event.deployment.sha }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile && bunx playwright install --with-deps chromium
+      - run: bunx playwright test tests/e2e/sign-in.spec.ts
+        env:
+          CI: true
+          BASE_URL: ${{ github.event.deployment_status.environment_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TEST_OTP_CODE: ${{ secrets.TEST_OTP_CODE }}
