@@ -155,7 +155,7 @@ Consequence decides the review tier, never size or a "UI" label. A one-line perm
 
 ### Issue tracker
 
-Linear: specs are parent issues, and tickets are sub-issues with blocking links. See `docs/agents/issue-tracker.md`.
+Linear team `TEAM_KEY`, project `PROJECT_NAME`. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 
