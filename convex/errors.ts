@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 
-export type ErrorCode = "UNAUTHENTICATED" | "INVALID_DISPLAY_NAME";
+export type ErrorCode = "UNAUTHENTICATED" | "NOT_FOUND" | "INVALID_DISPLAY_NAME";
 
 export function appError(code: ErrorCode, message: string) {
   return new ConvexError({ code, message });
