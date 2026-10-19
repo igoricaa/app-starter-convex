@@ -12,6 +12,11 @@ case "${VERCEL_ENV:-}:${CONVEX_DEPLOY_KEY:-}" in
 esac
 
 if [ "$VERCEL_ENV" = production ]; then
+  # A new Vercel project's first Git deployment goes to production, whatever its branch.
+  if [ "${VERCEL_GIT_COMMIT_REF:-}" != main ]; then
+    echo "Refusing to deploy: production builds only from main, not '${VERCEL_GIT_COMMIT_REF:-}'." >&2
+    exit 1
+  fi
   vars=$(bunx convex env list) || { echo "Could not read the production env vars." >&2; exit 1; }
   if grep -q '^TEST_OTP_CODE=' <<<"$vars"; then
     echo "Refusing to deploy: TEST_OTP_CODE is set on the production deployment." >&2

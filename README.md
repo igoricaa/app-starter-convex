@@ -13,4 +13,4 @@ app-kit's Convex starter: TanStack Start, Convex, Better Auth (email OTP), shadc
 ## Deploys
 
 - Every PR gets a Vercel preview with its own Convex preview backend, seeded with `test@example.test`, which signs in with the fixed `TEST_OTP_CODE` and gets no mail. CI runs the sign-in test against it.
-- Merging to `main` deploys production. Vercel's build runs `scripts/vercel-build.sh`, which refuses a deploy key from the wrong environment.
+- Merging to `main` deploys production. Vercel's build runs `scripts/vercel-build.sh`, which refuses a deploy key from the wrong environment and a production build from any branch but `main`.
