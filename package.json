@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "convex dev --start 'vite dev'",
+    "dev": "rm -f src/routeTree.gen.ts && convex dev --start 'vite dev'",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "check": "oxfmt --check && oxlint --type-aware && knip && tsc --noEmit && vitest run",

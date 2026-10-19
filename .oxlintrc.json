@@ -12,7 +12,7 @@
       {
         "patterns": [
           {
-            "group": ["**/_generated/server"],
+            "group": ["**/_generated/server", "**/_generated/server.js"],
             "importNames": [
               "query",
               "mutation",
@@ -20,6 +20,18 @@
               "internalQuery",
               "internalMutation",
               "internalAction"
+            ],
+            "message": "Build functions with the wrappers in convex/functions.ts."
+          },
+          {
+            "group": ["convex/server"],
+            "importNames": [
+              "queryGeneric",
+              "mutationGeneric",
+              "actionGeneric",
+              "internalQueryGeneric",
+              "internalMutationGeneric",
+              "internalActionGeneric"
             ],
             "message": "Build functions with the wrappers in convex/functions.ts."
           }

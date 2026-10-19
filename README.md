@@ -8,7 +8,7 @@ New apps are created from this template with `/app-setup new <name>`, the user-l
 
 - The account page as the reference slice: `convex/account.ts`, its tests, and `src/routes/_authed/account.tsx`.
 - Sign-in with email codes, a seeded test account, and one Playwright test of the flow.
-- CI: `verify` on every PR and on `main`; `e2e` against each PR's Vercel preview, which has its own Convex backend.
+- CI: `verify` on every PR and on `main`; `e2e` against each Vercel preview, which has its own Convex backend.
 - `scripts/vercel-build.sh`, the only path to production: merging to `main`.
 - The kit's agent files: `AGENTS.md`, the skills in `.agents/skills/`, `docs/agents/` and `.coderabbit.yaml`.
 

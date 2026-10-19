@@ -1,8 +1,9 @@
 import { createClient, type AuthFunctions, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
-import { requireActionCtx } from "@convex-dev/better-auth/utils";
+import { requireActionCtx, requireRunMutationCtx } from "@convex-dev/better-auth/utils";
 import { HOUR, MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { Resend } from "@convex-dev/resend";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { components, internal } from "./_generated/api";
@@ -18,6 +19,32 @@ function isSeeded(email: string) {
   return seededAccounts.some((account) => account.email === normalized);
 }
 
+// A seeded account's code is TEST_OTP_CODE and never mailed, so issuing it again costs nothing.
+function usesFixedCode(email: string) {
+  return !!env.TEST_OTP_CODE && isSeeded(email);
+}
+
+// Keyed by address, never by IP: behind the app's proxy every request comes from the server's IP.
+const otpLimits = new RateLimiter(components.rateLimiter, {
+  codesPerAddress: { kind: "token bucket", rate: 3, period: 10 * MINUTE },
+  // Only addresses without an account count, so a flood of new ones can't lock out existing users.
+  codesForNewAddresses: { kind: "fixed window", rate: 100, period: HOUR },
+  attemptsPerAddress: { kind: "token bucket", rate: 10, period: 10 * MINUTE },
+});
+
+// Every public endpoint that issues an email code, and every one that checks one.
+const issuesCode = [
+  "/email-otp/send-verification-otp",
+  "/email-otp/request-password-reset",
+  "/forget-password/email-otp",
+];
+const checksCode = [
+  "/sign-in/email-otp",
+  "/email-otp/check-verification-otp",
+  "/email-otp/verify-email",
+  "/email-otp/reset-password",
+];
+
 const authFunctions: AuthFunctions = internal.auth;
 
 export const authComponent = createClient<DataModel>(components.betterAuth, {
@@ -28,7 +55,8 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
         await ctx.db.insert("users", {
           authId: authUser._id,
           email: authUser.email,
-          displayName: authUser.name,
+          // The account slice's limit; sign-up itself accepts any length.
+          displayName: authUser.name.trim().slice(0, 50),
         });
       },
     },
@@ -47,13 +75,31 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
     },
     database: authComponent.adapter(ctx),
     // Behind the app's proxy every request reaches Convex from the server's IP, so per-IP limits
-    // would throttle all users together. OTP mail is limited per address in sendOtpEmail instead.
+    // would throttle all users together. The hook below limits codes per address instead.
     rateLimit: { enabled: false },
+    hooks: {
+      // Runs before the endpoint, so a refused request never stores or replaces a code.
+      before: createAuthMiddleware(async ({ path, body, context }) => {
+        const checking = checksCode.includes(path);
+        if ((!checking && !issuesCode.includes(path)) || typeof body?.email !== "string") return;
+        const key = body.email.trim().toLowerCase();
+        const limitCtx = requireRunMutationCtx(ctx);
+        const ok = checking
+          ? (await otpLimits.limit(limitCtx, "attemptsPerAddress", { key })).ok
+          : usesFixedCode(key) ||
+            ((await otpLimits.limit(limitCtx, "codesPerAddress", { key })).ok &&
+              (!!(await context.internalAdapter.findUserByEmail(key)) ||
+                (await otpLimits.limit(limitCtx, "codesForNewAddresses")).ok));
+        if (!ok)
+          throw new APIError("TOO_MANY_REQUESTS", {
+            message: "Too many tries. Wait a few minutes.",
+          });
+      }),
+    },
     plugins: [
       emailOTP({
         // Returning undefined falls back to a random code; expiry and attempt limits apply either way.
-        generateOTP: ({ email }) =>
-          env.TEST_OTP_CODE && isSeeded(email) ? env.TEST_OTP_CODE : undefined,
+        generateOTP: ({ email }) => (usesFixedCode(email) ? env.TEST_OTP_CODE : undefined),
         sendVerificationOTP: async ({ email, otp }) => {
           if (isSeeded(email)) return;
           await sendOtpEmail(requireActionCtx(ctx), email, otp);
@@ -63,17 +109,8 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
     ],
   });
 
-const otpEmailLimits = new RateLimiter(components.rateLimiter, {
-  perAddress: { kind: "token bucket", rate: 3, period: 10 * MINUTE },
-  total: { kind: "fixed window", rate: 100, period: HOUR },
-});
-
+// Better Auth logs a send failure and still answers success, so callers learn nothing.
 async function sendOtpEmail(ctx: ActionCtx, to: string, otp: string) {
-  const allowed =
-    (await otpEmailLimits.limit(ctx, "perAddress", { key: to })).ok &&
-    (await otpEmailLimits.limit(ctx, "total")).ok;
-  // Better Auth logs a send failure and still answers success, so callers learn nothing.
-  if (!allowed) throw new Error("Too many sign-in codes requested; no mail sent.");
   if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
     throw new Error(
       "Email is not configured: set RESEND_API_KEY and EMAIL_FROM on the deployment.",
