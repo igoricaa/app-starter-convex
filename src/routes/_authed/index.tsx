@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_authed/")({
 function Home() {
   return (
     <p>
-      Welcome back. Edit your <Link to="/account">account</Link>.
+      You are signed in. Edit your <Link to="/account">account</Link>.
     </p>
   );
 }
