@@ -1,16 +1,19 @@
 # app-starter-convex
 
-app-kit's Convex starter: TanStack Start, Convex, Better Auth (email OTP), shadcn/ui, deployed on Vercel.
+app-kit's starter for Convex apps: TanStack Start on Vercel, Convex, Better Auth with email codes, and shadcn/ui on Base UI.
 
-`/app-setup` in app-kit creates an app from this template and wires its services. Read `AGENTS.md` before changing anything.
+New apps are created from this template with `/app-setup new <name>`, the user-level skill in [igoricaa/app-kit](https://github.com/igoricaa/app-kit). It also wires the app's services.
 
-## Commands
+## Inside
 
-- `bun run dev`: the Convex dev deployment and the app on http://localhost:3000.
-- `bun run check`: format, lint, knip, types and unit tests, as CI runs them.
-- `bun run e2e`: the sign-in flow in Playwright; needs `TEST_OTP_CODE`.
+- The account page as the reference slice: `convex/account.ts`, its tests, and `src/routes/_authed/account.tsx`.
+- Sign-in with email codes, a seeded test account, and one Playwright test of the flow.
+- CI: `verify` on every PR and on `main`; `e2e` against each PR's Vercel preview, which has its own Convex backend.
+- `scripts/vercel-build.sh`, the only path to production: merging to `main`.
+- The kit's agent files: `AGENTS.md`, the skills in `.agents/skills/`, `docs/agents/` and `.coderabbit.yaml`.
 
-## Deploys
+## Links
 
-- Every PR gets a Vercel preview with its own Convex preview backend, seeded with `test@example.test`, which signs in with the fixed `TEST_OTP_CODE` and gets no mail. CI runs the sign-in test against it.
-- Merging to `main` deploys production. Vercel's build runs `scripts/vercel-build.sh`, which refuses a deploy key from the wrong environment and a production build from any branch but `main`.
+- [`AGENTS.md`](AGENTS.md): how to work here. Read it first.
+- [`docs/internals/convex.md`](docs/internals/convex.md): Convex rules.
+- Live: https://app-starter-convex.vercel.app
