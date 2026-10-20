@@ -17,3 +17,5 @@ New apps are created from this template with `/app-setup new <name>`, the user-l
 - [`AGENTS.md`](AGENTS.md): how to work here. Read it first.
 - [`docs/internals/convex.md`](docs/internals/convex.md): Convex rules.
 - Live: https://app-starter-convex.vercel.app
+
+PRs labelled `coderabbit` get a CodeRabbit review; `/build` adds the label to important, high-stakes or bigger PRs.
