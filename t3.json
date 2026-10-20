@@ -3,7 +3,7 @@
   "scripts": [
     {
       "name": "Setup Worktree",
-      "command": "cp \"$T3CODE_PROJECT_ROOT/.env.local\" .env.local && bun install",
+      "command": "cp \"$(git worktree list --porcelain | sed -n '1s/^worktree //p')/.env.local\" .env.local && bun install",
       "icon": "configure",
       "runOnWorktreeCreate": true
     }

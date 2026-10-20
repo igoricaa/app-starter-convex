@@ -10,22 +10,6 @@ Measure twice, cut once, and YAGNI. Fight scope creep.
 
 Treat this file as good defaults, not hard rules. If a rule fights the task in front of you, say so and ask before breaking it.
 
-## Sessions
-
-Igor starts every session, and each one ends by naming the next command.
-- **Setup:** `/app-setup`.
-- **Shape:**
-  1. `/grill-with-docs`;
-  2. one screen with the technical approach and the spec outline, for Igor to approve;
-  3. `/to-spec`, written into a Linear parent issue;
-  4. the spec challenge (see Routing);
-  5. a one-screen overview;
-  6. `/design` first, if the outline says "Paper first";
-  7. `/to-tickets`.
-- **Build:** `/build`. Merging deploys production.
-
-Tiny tweaks (copy, spacing, a label) go straight to `main`, with no PR.
-
 ## The ways to hurt yourself
 
 1. **Touching production.**
@@ -63,7 +47,7 @@ The most common defect is a change that works on the path you tested and is miss
 
 ## Verifying
 
-- **Smallest proof:** run the tests that cover what you changed, plus `bunx oxfmt <files>`, `bunx oxlint --type-aware <files>` and `bunx tsc --noEmit`. CI runs the full suite (`bun run check`'s steps, then the preview e2e).
+- **Smallest proof:** format the files you touched with `bunx oxfmt <files>`; run the tests that cover the change, plus `bunx oxlint --type-aware <files>` and `bunx tsc --noEmit`. CI runs the full suite.
 - **Backend changes** ship with focused `convex-test` tests at the function boundary: who may call it, whose data it touches, and the error codes. Copy `convex/account.test.ts`.
 - **Test meaningful behaviour.** No static-render tests, no tests that mirror the implementation, no snapshots.
 - **End-to-end:** one Playwright test (sign-in). Add one only for a flow whose breaking would really hurt.
@@ -72,13 +56,8 @@ The most common defect is a change that works on the path you tested and is miss
 ## Pull requests
 
 - Conventional commit titles in plain language, with the Linear key: `feat(account): edit display name (APP-12)`.
-- **The body:**
-  - the problem and the fix;
-  - before/after images for UI, uploaded to GitHub, never committed;
-  - the one-way or two-way door line;
-  - the Linear links;
-  - the models that built and reviewed it.
-- **Merging deploys production.** CI green means verify, the Vercel build and the preview e2e, all for the head SHA. Confirm e2e itself passed, since it appears a few seconds after Vercel's success: `gh pr checks <n> --json name,bucket --jq '.[] | select(.name == "e2e") | .bucket'` prints `pass`.
+- The body follows `/build`.
+- Merging deploys production. CI green means verify, the Vercel build and the preview e2e for the head SHA; confirm e2e itself passed (`gh pr checks <n> --json name,bucket --jq '.[] | select(.name == "e2e") | .bucket'` prints `pass`).
 
 ## Documentation
 
@@ -121,14 +100,30 @@ Most changes need no doc change. Agents can read the code.
 
 - **Every public function** goes through `convex/functions.ts`, validates its arguments, returns a narrow object, and throws `appError(code, message)`.
 - **Identity** comes from `ctx.user`, never from arguments.
-- **Ownership and tenancy** are checked against the record itself.
+- **Ownership and tenancy** are checked against the record: load it and check its owner inside the mutation.
 - **External services:** use a Convex component first. Otherwise write an Effect service, called from a thin action that writes back through a mutation. No Effect inside queries and mutations.
 - **Validation** uses Convex `v.*` validators in functions and Effect Schema elsewhere. No Zod unless a dependency forces it.
-- **UI components own their look.** Pick a `variant` or `size`, and never restyle one with `className`. Layout classes go on the parent. `@shadcn/lint` enforces this. See `docs/internals/web-ui.md` once the foundation writes it.
+- **UI components own their look.** Pick a `variant` or `size`; never restyle one with `className`. Layout goes on a wrapping element. `@shadcn/lint` enforces it. See `docs/internals/web-ui.md` once the UI foundation writes it.
 - Inferred types over annotations. `any` is the enemy.
 - **Comments** describe how a thing is used, mostly on functions. Never narrate lines. A lint or type suppression carries its reason.
 
-<!-- app-kit:routing:start (kit-owned; refresh replaces this block) -->
+<!-- app-kit:start (kit-owned; refresh replaces this block) -->
+## Sessions
+
+Igor starts every session, and each one ends by naming the next command.
+- **Setup:** `/app-setup`.
+- **Shape,** one unbroken session:
+  1. `/grill-with-docs`. Terms go in `GLOSSARY.md`; an ADR only when a decision is hard to reverse, surprising and a real trade-off.
+  2. **One screen for Igor to approve:** the technical approach and the spec outline (data model sketch, key libraries, departures from the kit's defaults, scope in and out, main flows, key decisions, risky parts, test seams), and a `Design:` line: Paper first, or straight to code.
+  3. `/to-spec`, written into a Linear parent issue. Its seam check is answered "as outlined".
+  4. **The spec challenge,** by stakes (see Routing). Its findings update the spec.
+  5. A one-screen overview: what the challenge changed, and any questions.
+  6. **Paper first:** stop here. Igor runs `/design`, then `/to-tickets <spec>`, because screen tickets name their frames.
+  7. `/to-tickets`.
+  8. Before `/build`, commit `GLOSSARY.md`, ADRs and `docs/decisions.md` straight to `main` (docs only), so builders' worktrees see them.
+- **Build:** `/build`, a fresh session per batch. Merging deploys production.
+- **Tiny tweaks** (copy, spacing, a label) go straight to `main`, with no PR and no review.
+
 ## Routing
 
 Every dispatch pins its model and effort. Never Haiku. At most 6 Opus agents at high or xhigh at once, and 10 agents in total, nested included. Codex models (Sol, Astra) run through T3 `delegate_task`. If T3 is unreachable, stop and say so; never swap a model silently.
@@ -149,13 +144,13 @@ Every dispatch pins its model and effort. Never Haiku. At most 6 Opus agents at 
 | Hard debugging | Sol (diagnose) → Opus 5.5 (fix) | xhigh → high |
 
 Consequence decides the review tier, never size or a "UI" label. A one-line permission change is high-stakes.
-<!-- app-kit:routing:end -->
+<!-- app-kit:end -->
 
 ## Agent skills
 
 ### Issue tracker
 
-Linear team `TEAM_KEY`, project `PROJECT_NAME`. See `docs/agents/issue-tracker.md`.
+Linear (MCP `<server>`), team `TEAM_KEY`, project `PROJECT_NAME`. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 
