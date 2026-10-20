@@ -19,7 +19,7 @@ Treat this file as good defaults, not hard rules. If a rule fights the task in f
 2. **Printing secrets.** Never echo, log or commit one. Generate a secret and pipe it straight in: `openssl rand -base64 32 | bunx convex env set BETTER_AUTH_SECRET`.
 3. **Breaking open tabs.** Users keep the old frontend open after a deploy, so a public function's arguments and return value change only additively. Removals and renames go in a later PR.
 4. **Narrowing data in one step.** It takes three PRs: widen the schema, migrate (`@convex-dev/migrations`), then narrow, and only after the migration has completed. Igor takes a backup first.
-5. **Running `convex dev` in a worktree.** There is one dev deployment. Builders never run it; they run `bunx convex codegen` and test with `convex-test`. The one exception is `/build`'s integration check, which runs `bun run dev` in the batch's worktree: the only `convex dev` during a build.
+5. **Running `convex dev`.** There is one dev deployment, and only Igor runs it. Builders run `bunx convex codegen` and test with `convex-test`; `/build`'s browser walk uses the PR's preview, which has its own backend.
 
 ## Hit every surface
 
@@ -36,13 +36,13 @@ The most common defect is a change that works on the path you tested and is miss
 ## Dev servers
 
 - `bun install`. New worktrees get `.env.local` and dependencies from `t3.json` / `.worktreeinclude`.
-- `bun run dev` runs Vite and `convex dev` together on port 3000. Only Igor or the integration check runs it. It deletes and regenerates `src/routeTree.gen.ts` first, to work around a nitro beta restart bug (see `docs/internals/convex.md`).
+- `bun run dev` runs Vite and `convex dev` together on port 3000. Only Igor runs it. It deletes and regenerates `src/routeTree.gen.ts` first, to work around a nitro beta restart bug (see `docs/internals/convex.md`).
 - Stop what you started, by the PID you captured. Never kill by name or pattern.
 
 ## Test data
 
 - `bunx convex run seed` creates the seeded accounts (see `convex/seed.ts`). It refuses wherever `TEST_OTP_CODE` is unset, which includes production.
-- Sign in as a seeded account with the code in `TEST_OTP_CODE`. It works only in dev and previews, and only for seeded addresses. Use it without printing it: `TEST_OTP_CODE="$(bunx convex env get TEST_OTP_CODE)" bunx playwright …`.
+- Sign in as a seeded account with the code in `TEST_OTP_CODE`. It works only in dev and previews, and only for seeded addresses. Previews get dev's code, so one value works on both. Use it without printing it: `TEST_OTP_CODE="$(bunx convex env get TEST_OTP_CODE)" bunx playwright …`.
 - Each branch's previews share one backend, seeded when it's created.
 
 ## Verifying
@@ -51,7 +51,7 @@ The most common defect is a change that works on the path you tested and is miss
 - **Backend changes** ship with focused `convex-test` tests at the function boundary: who may call it, whose data it touches, and the error codes. Copy `convex/account.test.ts`.
 - **Test meaningful behaviour.** No static-render tests, no tests that mirror the implementation, no snapshots.
 - **End-to-end:** one Playwright test (sign-in). Add one only for a flow whose breaking would really hurt.
-- **No browsers** unless `/build`'s integration check or Igor asks.
+- **Browsers:** the browser walk runs on the preview (see `/build`).
 
 ## Pull requests
 
@@ -122,6 +122,7 @@ Igor starts every session, and each one ends by naming the next command.
   7. `/to-tickets`.
   8. Before `/build`, commit `GLOSSARY.md`, ADRs and `docs/decisions.md` straight to `main` (docs only), so builders' worktrees see them.
 - **Build:** `/build`, a fresh session per batch. Merging deploys production.
+- **A small, clear feature** (one piece, no new data model, not high-stakes) skips Shape: `/build <what>`. The coordinator writes one Linear ticket (acceptance criteria, test seam) and builds it. Everything else goes through Shape and both its approval rounds (the outline, then the spec and tickets).
 - **Tiny tweaks** (copy, spacing, a label) go straight to `main`, with no PR and no review.
 
 ## Routing
