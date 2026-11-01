@@ -31,6 +31,7 @@
       },
       "devDependencies": {
         "@edge-runtime/vm": "^5.0.0",
+        "@oxlint/plugins": "^1.90.0",
         "@playwright/test": "^1.64.1",
         "@shadcn/lint": "0.2.3",
         "@types/node": "^26.6.5",
@@ -122,8 +123,6 @@
     "@better-auth/mongo-adapter": ["@better-auth/mongo-adapter@1.6.17", "", { "peerDependencies": { "@better-auth/core": "^1.6.17", "@better-auth/utils": "0.4.1", "mongodb": "^6.0.0 || ^7.0.0" }, "optionalPeers": ["mongodb"] }, "sha512-nSmolHUVR2/AIKg6WijrSxdF9DCAybbiswulw9ph4FghuCuWl9DDzfTKvG/z+/FpRaYuY+KYFitNbeRiTonn1A=="],
 
     "@better-auth/prisma-adapter": ["@better-auth/prisma-adapter@1.6.17", "", { "peerDependencies": { "@better-auth/core": "^1.6.17", "@better-auth/utils": "0.4.1", "@prisma/client": "^5.0.0 || ^6.0.0 || ^7.0.0", "prisma": "^5.0.0 || ^6.0.0 || ^7.0.0" }, "optionalPeers": ["@prisma/client", "prisma"] }, "sha512-DW1eEXw39Hv/z34ctfoR6lB3rZRt/+X/m7j74dYTsSUt7TjaIjfhQkN01mYN7+GeLSqzGxJ132N93L7iGutKuA=="],
-
-    "@better-auth/telemetry": ["@better-auth/telemetry@1.6.17", "", { "peerDependencies": { "@better-auth/core": "^1.6.17", "@better-auth/utils": "0.4.1", "@better-fetch/fetch": "1.3.0" } }, "sha512-ik7gC4UgdR3Jyb0x7yVzLTfc04x5kfjFbSdOraUbhZUXkOF+/7Ee57SuB2QgfffGEr8xhGHp46sqzF9u2D4qoQ=="],
 
     "@better-auth/utils": ["@better-auth/utils@0.4.1", "", { "dependencies": { "@noble/hashes": "^2.0.1" } }, "sha512-SZBPRPF3z0nBvE5ygOkxae35wnnXPRShmqFo78S+qslLeFoPu/pMgnXAuNKFMMybac3tiLaVg1e3MQW5MC+1iA=="],
 
@@ -420,6 +419,8 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.89.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-saFy07cO94E664glwgLmKLI40HgTL1PY86y4T6+ud4niX4H0Kdqjcmqmjps7mQNdBytV5guGbXDdyQtRfeLbLA=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.89.0", "", { "os": "win32", "cpu": "x64" }, "sha512-hLFJ/o0f/dTJh/EW0vmcbREYSQO9tYgfiAAlsOkiLFiJuRRWvYtFELUXN5o2ijpSo/tlO1n+YlWN58tZwPG18A=="],
+
+    "@oxlint/plugins": ["@oxlint/plugins@1.90.0", "", {}, "sha512-FT0JJDNbj9oobVWHpAzFckHY/bx1ftPjulBx4UCMXqmDUGqVWOkbKe5bj4zdEL+D5Ud7y/RfioLwSvlHBMjI4w=="],
 
     "@playwright/test": ["@playwright/test@1.64.1", "", { "dependencies": { "playwright": "1.64.1" }, "bin": { "playwright": "cli.js" } }, "sha512-IaYGml/nSOiZWROfPtuIL7neuu9qDOZ3TNvNljUIrhDMxiGTgPjzj/g9p9RxpS2tSepPDRY+UwAaEeiKtUvIAg=="],
 
@@ -1299,8 +1300,6 @@
 
     "@better-auth/core/@better-fetch/fetch": ["@better-fetch/fetch@1.3.0", "", {}, "sha512-Lgkl18IrUURFqa1nE38GNDWXf7XGzfxXQDCE/alCQV0yZ98YrPGtlmW61ch1T4YRt3lxrSAGA+Ft73FzuWWb3A=="],
 
-    "@better-auth/telemetry/@better-fetch/fetch": ["@better-fetch/fetch@1.3.0", "", {}, "sha512-Lgkl18IrUURFqa1nE38GNDWXf7XGzfxXQDCE/alCQV0yZ98YrPGtlmW61ch1T4YRt3lxrSAGA+Ft73FzuWWb3A=="],
-
     "@convex-dev/resend/@convex-dev/rate-limiter": ["@convex-dev/rate-limiter@0.3.2", "", { "peerDependencies": { "convex": "^1.24.8", "react": "^18.2.0 || ^19.0.0" }, "optionalPeers": ["react"] }, "sha512-+oBPsBfFbzdxiF/9XaaTQmVnvDlvEfg/c69/v8LxTbw4VLuiflIKlfnPQL8OS0azXQQ11hcPWHmU8ytFmHKDXA=="],
 
     "@convex-dev/workpool/@convex-dev/batch-worker": ["@convex-dev/batch-worker@0.2.2", "", { "peerDependencies": { "convex": "^1.36.1", "react": "^18.3.1 || ^19.0.0" } }, "sha512-3knigElzTVhWw1sN28EYkGBTdrJZ03vMj2PJPuFq3V0Tg41i7tcv/EWDBFQWcUaKzBWWVw693hcJtxCF3CRtEw=="],
@@ -1336,6 +1335,10 @@
     "@tanstack/router-generator/magic-string": ["magic-string@0.30.21", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="],
 
     "@tanstack/router-utils/diff": ["diff@9.0.0", "", {}, "sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw=="],
+
+    "better-auth/@better-auth/core": ["@better-auth/core@1.6.17", "", { "dependencies": { "@opentelemetry/semantic-conventions": "^1.39.0", "@standard-schema/spec": "^1.1.0", "zod": "^4.3.6" }, "peerDependencies": { "@better-auth/utils": "0.4.1", "@better-fetch/fetch": "1.3.0", "@cloudflare/workers-types": ">=4", "@opentelemetry/api": "^1.9.0", "better-call": "1.3.6", "jose": "^6.1.0", "kysely": "^0.28.5 || ^0.29.0", "nanostores": "^1.0.1" }, "optionalPeers": ["@cloudflare/workers-types", "@opentelemetry/api"] }, "sha512-ithzeL/IKsBEYeCDJs9r1KE2nwYC/6ni8oMA8NCCtP18RoCOiWErFSjrnL+XLaN6zxrB0ko7QxREjyzTNBtusQ=="],
+
+    "better-auth/@better-auth/telemetry": ["@better-auth/telemetry@1.6.17", "", { "peerDependencies": { "@better-auth/core": "^1.6.17", "@better-auth/utils": "0.4.1", "@better-fetch/fetch": "1.3.0" } }, "sha512-ik7gC4UgdR3Jyb0x7yVzLTfc04x5kfjFbSdOraUbhZUXkOF+/7Ee57SuB2QgfffGEr8xhGHp46sqzF9u2D4qoQ=="],
 
     "better-auth/@better-fetch/fetch": ["@better-fetch/fetch@1.3.0", "", {}, "sha512-Lgkl18IrUURFqa1nE38GNDWXf7XGzfxXQDCE/alCQV0yZ98YrPGtlmW61ch1T4YRt3lxrSAGA+Ft73FzuWWb3A=="],
 
