@@ -1,5 +1,9 @@
 import type { E2EConfig } from "e2e";
 import { web } from "@e2e-dev/web";
+import { existsSync } from "node:fs";
+
+// Local runs and `e2e mcp` (which agents start with a bare environment) read APP_URL and the secrets from this ignored file.
+if (existsSync(".env.e2e")) process.loadEnvFile(".env.e2e");
 
 const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
