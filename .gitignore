@@ -6,3 +6,5 @@ node_modules
 .vercel
 test-results
 playwright-report
+.e2e/
+.env.e2e

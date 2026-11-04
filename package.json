@@ -37,6 +37,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@e2e-dev/web": "^0.15.4",
     "@edge-runtime/vm": "^5.0.0",
     "@oxlint/plugins": "^1.90.0",
     "@playwright/test": "^1.64.1",
@@ -46,6 +47,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "convex-test": "^0.0.62",
+    "e2e": "^0.22.0",
     "knip": "^6.42.1",
     "oxfmt": "^0.74.0",
     "oxlint": "^1.89.0",
