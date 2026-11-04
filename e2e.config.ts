@@ -2,19 +2,17 @@ import type { E2EConfig } from "e2e";
 import { web } from "@e2e-dev/web";
 import { existsSync } from "node:fs";
 
-// Local runs and `e2e mcp` (which agents start with a bare environment) read APP_URL and the secrets from this ignored file.
+// `bash scripts/e2e-env.sh <url>` writes this ignored file: the URL, the Vercel bypass and the sign-in code.
+// `e2e mcp` starts with a bare environment, so the config reads them here.
 if (existsSync(".env.e2e")) process.loadEnvFile(".env.e2e");
 
 const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 // e2e sends headers to the app's own site only, never to Convex or other hosts.
 const headers = bypass ? { "x-vercel-protection-bypass": bypass } : undefined;
-const app = {
-  url: process.env.APP_URL ?? "http://localhost:3000",
-  identity: "app-starter-convex",
-  environment: "staging",
-} as const;
+const app = { url: process.env.APP_URL ?? "http://localhost:3000" };
 
-// The walk's two sizes; a session picks one with open_session's target.
+// The browser walk's two sizes; a session picks one by name. An app with dark mode adds
+// `desktop-dark` and `mobile-dark` targets with `colorScheme: "dark"`.
 export default {
   targets: [
     {
